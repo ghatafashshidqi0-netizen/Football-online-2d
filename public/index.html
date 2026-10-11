@@ -1,1 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2D Multiplayer Football</title>
+    <style>
+        body { margin: 0; padding: 0; background: #2c3e50; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #menu { background: #34495e; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        h1 { margin-top: 0; color: #2ecc71; }
+        input { padding: 10px; margin: 10px 0; border: none; border-radius: 5px; width: 80%; font-size: 16px; text-align: center; }
+        button { padding: 10px 20px; border: none; border-radius: 5px; background: #2ecc71; color: white; font-size: 16px; cursor: pointer; margin: 5px; font-weight: bold; transition: 0.3s; }
+        button:hover { background: #27ae60; }
+        #game-container { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 800px; }
+        canvas { background: #27ae60; border: 5px solid #ecf0f1; border-radius: 10px; max-width: 100%; height: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        #controls { margin-top: 15px; display: flex; gap: 20px; font-size: 14px; color: #bdc3c7; }
+    </style>
+</head>
+<body>
 
+    <!-- Menu Utama -->
+    <div id="menu">
+        <h1>⚽ Football 2D</h1>
+        <p>Mainkan di HP atau Laptop!</p>
+        <input type="text" id="roomInput" placeholder="Masukkan Nama Room">
+        <br>
+        <button onclick="createRoom()">Buat Room</button>
+        <button onclick="joinRoom()">Gabung Room</button>
+        <p id="statusMsg" style="color: #e74c3c; font-size: 14px;"></p>
+    </div>
+
+    <!-- Area Game -->
+    <div id="game-container">
+        <h2 id="roomDisplay">Room: -</h2>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div id="controls">💻 Laptop: W A S D / Panah | 📱 HP: Sentuh/Tap area lapangan</div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const menu = document.getElementById('menu');
+        const gameContainer = document.getElementById('game-container');
+        const statusMsg = document.getElementById('statusMsg');
+        const roomInput = document.getElementById('roomInput');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentRoom = '';
+        let gameState = {};
+        let myId = '';
+
+        // UI Logic
+        function createRoom() {
+            const room = roomInput.value.trim();
+            if(room) socket.emit('createRoom', room);
+        }
+
+        function joinRoom() {
+            const room = roomInput.value.trim();
+            if(room) socket.emit('joinRoom', room);
+        }
+
+        // Socket Listeners
+        socket.on('roomCreated', (roomId) => {
+            statusMsg.style.color = "#f1c40f";
+            statusMsg.innerText = `Room ${roomId} dibuat. Menunggu lawan...`;
+            currentRoom = roomId;
+        });
+
+        socket.on('gameStart', (state) => {
+            currentRoom = roomInput.value.trim() || currentRoom;
+            myId = socket.id;
+            gameState = state;
+            menu.style.display = 'none';
+            gameContainer.style.display = 'flex';
+            document.getElementById('roomDisplay').innerText = `Room: ${currentRoom}`;
+            gameLoop();
+        });
+
+        socket.on('updateState', (state) => {
+            gameState = state;
+        });
+
+        socket.on('errorMsg', (msg) => {
+            statusMsg.style.color = "#e74c3c";
+            statusMsg.innerText = msg;
+        });
+
+        socket.on('playerLeft', () => {
+            alert("Lawan telah keluar dari permainan!");
+            location.reload();
+        });
+
+        // Game Render Loop
+        function draw() {
+            // Lapangan
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "rgba(255,255,255,0.5)";
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(400, 0); ctx.lineTo(400, 400); ctx.stroke(); // Garis tengah
+            ctx.beginPath(); ctx.arc(400, 200, 50, 0, Math.PI * 2); ctx.stroke(); // Lingkaran tengah
+
+            if(!gameState.players) return;
+
+            // Gambar Pemain
+            for (let id in gameState.players) {
+                const p = gameState.players[id];
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                if (id === myId) {
+                    ctx.fillStyle = "white";
+                    ctx.font = "12px Arial";
+                    ctx.fillText("You", p.x - 10, p.y - 25);
+                }
+            }
+
+            // Gambar Bola (Scaffold)
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(gameState.ball.x, gameState.ball.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function gameLoop() {
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Kontrol Input (Kompatibel HP & Laptop)
+        const keys = {};
+        window.addEventListener('keydown', (e) => keys[e.key] = true);
+        window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // Update Movement (Client side)
+        setInterval(() => {
+            if (!currentRoom || !gameState.players || !gameState.players[myId]) return;
+            
+            let p = gameState.players[myId];
+            let moved = false;
+            let speed = 5;
+
+            if (keys['ArrowUp'] || keys['w']) { p.y -= speed; moved = true; }
+            if (keys['ArrowDown'] || keys['s']) { p.y += speed; moved = true; }
+            if (keys['ArrowLeft'] || keys['a']) { p.x -= speed; moved = true; }
+            if (keys['ArrowRight'] || keys['d']) { p.x += speed; moved = true; }
+
+            // Batas Lapangan
+            p.x = Math.max(20, Math.min(canvas.width - 20, p.x));
+            p.y = Math.max(20, Math.min(canvas.height - 20, p.y));
+
+            if (moved) {
+                socket.emit('move', { roomId: currentRoom, x: p.x, y: p.y });
+            }
+        }, 1000/60);
+
+        // Kontrol Sentuh untuk HP
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Mencegah scrolling
+            if (!currentRoom || !gameState.players || !gameState.players[myId]) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const p = gameState.players[myId];
+            p.x = (touch.clientX - rect.left) * scaleX;
+            p.y = (touch.clientY - rect.top) * scaleY;
+
+            socket.emit('move', { roomId: currentRoom, x: p.x, y: p.y });
+        }, { passive: false });
+    </script>
+</body>
+</html>
