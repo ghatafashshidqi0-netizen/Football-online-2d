@@ -1,16 +1,19 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
+// BERITAHU SERVER BAHWA FILE STATIS ADA DI FOLDER "public"
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(express.static(__dirname));
+// ARAHKAN RUTE UTAMA KE "public/index.html"
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 const rooms = {};
 
@@ -45,7 +48,6 @@ io.on('connection', (socket) => {
         if (rooms[roomId] && rooms[roomId].players[socket.id]) {
             rooms[roomId].players[socket.id].x = x;
             rooms[roomId].players[socket.id].y = y;
-            // Broadcast ke pemain lain di room yang sama
             socket.to(roomId).emit('updateState', rooms[roomId]);
         }
     });
@@ -56,7 +58,7 @@ io.on('connection', (socket) => {
                 delete rooms[roomId].players[socket.id];
                 io.to(roomId).emit('playerLeft');
                 if (Object.keys(rooms[roomId].players).length === 0) {
-                    delete rooms[roomId]; // Hapus room jika kosong
+                    delete rooms[roomId]; 
                 }
             }
         }
