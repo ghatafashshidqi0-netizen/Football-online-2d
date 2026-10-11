@@ -3,44 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Multiplayer Football</title>
+    <title>2D Pro Multiplayer Football</title>
     <style>
         body { margin: 0; padding: 0; background: #1a252f; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #menu { background: #2c3e50; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        h1 { margin-top: 0; color: #2ecc71; }
-        input { padding: 12px; margin: 10px 0; border: none; border-radius: 8px; width: 85%; font-size: 16px; text-align: center; }
-        button { padding: 12px 20px; border: none; border-radius: 8px; background: #2ecc71; color: white; font-size: 16px; cursor: pointer; margin: 5px; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #27ae60; transform: scale(1.05); }
+        #menu { background: #2c3e50; padding: 40px; border-radius: 15px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
+        h1 { margin-top: 0; color: #f1c40f; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        input { padding: 12px; margin: 15px 0; border: none; border-radius: 8px; width: 85%; font-size: 18px; text-align: center; font-weight: bold;}
+        button { padding: 12px 20px; border: none; border-radius: 8px; background: #f1c40f; color: #2c3e50; font-size: 16px; cursor: pointer; margin: 5px; font-weight: 900; transition: 0.2s; box-shadow: 0 5px 0 #d4ac0d; }
+        button:active { transform: translateY(5px); box-shadow: none; }
         
-        #game-container { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 800px; }
-        #scoreboard { display: flex; justify-content: space-between; width: 100%; background: #2c3e50; padding: 10px 20px; border-radius: 10px 10px 0 0; box-sizing: border-box; font-size: 24px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 2; }
-        .score-blue { color: #3498db; }
-        .score-red { color: #e74c3c; }
+        #game-container { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 800px; position: relative;}
         
-        canvas { background: #27ae60; border: 5px solid #bdc3c7; border-radius: 0 0 10px 10px; max-width: 100%; height: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        #controls { margin-top: 15px; display: flex; gap: 20px; font-size: 14px; color: #95a5a6; background: #2c3e50; padding: 10px 20px; border-radius: 20px; }
+        /* Scoreboard & Timer */
+        #scoreboard { display: flex; justify-content: space-between; width: 100%; background: #2c3e50; padding: 10px 20px; border-radius: 10px 10px 0 0; box-sizing: border-box; font-size: 26px; font-weight: 900; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 2; }
+        .score-blue { color: #3498db; text-shadow: 1px 1px 3px black;}
+        .score-red { color: #e74c3c; text-shadow: 1px 1px 3px black;}
+        #timer { color: #f1c40f; font-size: 30px; font-family: monospace; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 10px;}
+        
+        canvas { background: #27ae60; border: 5px solid #bdc3c7; border-radius: 0 0 10px 10px; max-width: 100%; height: auto; box-shadow: 0 15px 30px rgba(0,0,0,0.7); }
+        
+        /* Overlay Text (GOAL & GAME OVER) */
+        #overlayMsg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 70px; font-weight: 900; color: #fff; text-shadow: 5px 5px 0px #000, 0 0 20px #f1c40f; display: none; z-index: 10; pointer-events: none; text-align: center; line-height: 1.2; width: 100%;}
+        
+        #controls { margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 15px; color: #ecf0f1; background: #2c3e50; padding: 15px 20px; border-radius: 15px; width: 100%; box-sizing: border-box;}
+        #mobileSprintBtn { display: none; background: #e67e22; box-shadow: 0 4px 0 #d35400; width: 200px; padding: 15px; font-size: 18px; color: white;}
+        
+        @media (max-width: 768px) {
+            #mobileSprintBtn { display: block; }
+            #controls span { display: none; } /* Hide text on mobile to save space */
+        }
     </style>
 </head>
 <body>
 
     <div id="menu">
-        <h1>⚽ Liga 2D Multiplayer</h1>
-        <p>Mainkan di HP atau Laptop!</p>
-        <input type="text" id="roomInput" placeholder="Masukkan ID Room (Misal: 123)">
+        <h1>🏆 PRO FOOTBALL 2D</h1>
+        <p style="color:#bdc3c7;">Persiapkan strategi & staminamu!</p>
+        <input type="text" id="roomInput" placeholder="Ketik ID Room (Cth: 123)">
         <br>
         <button onclick="createRoom()">Buat Room</button>
         <button onclick="joinRoom()">Gabung Lawan</button>
-        <p id="statusMsg" style="color: #e74c3c; font-size: 14px; margin-top: 15px;"></p>
+        <p id="statusMsg" style="color: #e74c3c; font-size: 15px; margin-top: 15px; font-weight: bold;"></p>
     </div>
 
     <div id="game-container">
         <div id="scoreboard">
-            <span class="score-blue" id="scoreBlue">TIM BIRU: 0</span>
-            <span style="color: #ecf0f1; font-size: 16px; align-self: center;" id="roomDisplay">Room: -</span>
-            <span class="score-red" id="scoreRed">TIM MERAH: 0</span>
+            <span class="score-blue" id="scoreBlue">BIRU: 0</span>
+            <span id="timer">03:00</span>
+            <span class="score-red" id="scoreRed">MERAH: 0</span>
         </div>
+        
+        <div id="overlayMsg">GOAL!!!</div>
+        
         <canvas id="gameCanvas" width="800" height="400"></canvas>
-        <div id="controls">💻 Laptop: W A S D / Panah | 📱 HP: Sentuh & Tahan Layar</div>
+        
+        <div id="controls">
+            <span>💻 Bergerak: W A S D | <b>Lari Cepat (Sprint): Tahan SHIFT</b></span>
+            <button id="mobileSprintBtn">⚡ TAHAN UNTUK SPRINT</button>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -49,12 +69,16 @@
         const menu = document.getElementById('menu');
         const gameContainer = document.getElementById('game-container');
         const statusMsg = document.getElementById('statusMsg');
+        const overlayMsg = document.getElementById('overlayMsg');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const mobileSprintBtn = document.getElementById('mobileSprintBtn');
 
         let currentRoom = '';
         let gameState = {};
         let myId = '';
+        let stamina = 100;
+        let isMobileSprinting = false;
 
         function createRoom() {
             const room = document.getElementById('roomInput').value.trim();
@@ -77,49 +101,85 @@
             gameState = state;
             menu.style.display = 'none';
             gameContainer.style.display = 'flex';
-            document.getElementById('roomDisplay').innerText = `Room: ${currentRoom}`;
             gameLoop();
         });
 
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
         socket.on('updateState', (state) => {
             gameState = state;
-            document.getElementById('scoreBlue').innerText = `TIM BIRU: ${state.score.blue}`;
-            document.getElementById('scoreRed').innerText = `TIM MERAH: ${state.score.red}`;
+            document.getElementById('scoreBlue').innerText = `BIRU: ${state.score.blue}`;
+            document.getElementById('scoreRed').innerText = `MERAH: ${state.score.red}`;
+            document.getElementById('timer').innerText = formatTime(state.timeLeft);
+        });
+
+        socket.on('goalScored', (room) => {
+            gameState = room;
+            overlayMsg.style.display = 'block';
+            overlayMsg.innerHTML = `GOAL!!!<br><span style="font-size:30px; color:#bdc3c7;">Gol oleh ${room.lastScorer}</span>`;
+            setTimeout(() => { overlayMsg.style.display = 'none'; }, 3000);
+        });
+
+        socket.on('gameOver', (room) => {
+            let winner = "SERI!";
+            if(room.score.blue > room.score.red) winner = "TIM BIRU MENANG!";
+            if(room.score.red > room.score.blue) winner = "TIM MERAH MENANG!";
+            
+            overlayMsg.style.display = 'block';
+            overlayMsg.style.color = "#e74c3c";
+            overlayMsg.innerHTML = `WAKTU HABIS!<br>${winner}<br><span style="font-size:20px; color:white;">Refresh halaman untuk main lagi</span>`;
         });
 
         socket.on('errorMsg', (msg) => { statusMsg.innerText = msg; });
         socket.on('playerLeft', () => {
-            alert("Lawan kabur dari pertandingan! Anda menang WO.");
+            alert("Lawan meninggalkan pertandingan! Anda menang WO.");
             location.reload();
         });
 
         function drawField() {
-            // Pola rumput gelap terang
+            // Rumput corak gelap terang
             for (let i = 0; i < canvas.width; i += 40) {
-                ctx.fillStyle = (i / 40) % 2 === 0 ? "#27ae60" : "#2ecc71";
+                ctx.fillStyle = (i / 40) % 2 === 0 ? "#219a52" : "#27ae60";
                 ctx.fillRect(i, 0, 40, canvas.height);
             }
 
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
             ctx.lineWidth = 3;
-
-            // Garis Luar
+            // Garis Pinggir, Tengah, dan Lingkaran
             ctx.strokeRect(0, 0, canvas.width, canvas.height);
-            // Garis Tengah & Lingkaran
             ctx.beginPath(); ctx.moveTo(canvas.width/2, 0); ctx.lineTo(canvas.width/2, canvas.height); ctx.stroke();
             ctx.beginPath(); ctx.arc(canvas.width/2, canvas.height/2, 60, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = "rgba(255,255,255,0.7)"; ctx.beginPath(); ctx.arc(canvas.width/2, canvas.height/2, 5, 0, Math.PI * 2); ctx.fill();
 
-            // Area Penalti Kiri
-            ctx.strokeRect(0, 80, 120, 240);
-            ctx.strokeRect(0, 130, 40, 140); // Area kiper
-            // Area Penalti Kanan
-            ctx.strokeRect(canvas.width - 120, 80, 120, 240);
-            ctx.strokeRect(canvas.width - 40, 130, 40, 140);
+            // Area Penalti & Gawang
+            ctx.strokeRect(0, 80, 120, 240); ctx.strokeRect(0, 130, 40, 140);
+            ctx.strokeRect(canvas.width - 120, 80, 120, 240); ctx.strokeRect(canvas.width - 40, 130, 40, 140);
 
-            // Gawang Kiri & Kanan (Area Hitam)
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
-            ctx.fillRect(0, 150, 10, 100);
-            ctx.fillRect(canvas.width - 10, 150, 10, 100);
+            // Jaring Gawang (Hitam Transparan)
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
+            ctx.fillRect(0, 130, 10, 140);
+            ctx.fillRect(canvas.width - 10, 130, 10, 140);
+        }
+
+        function drawBall(x, y) {
+            // Shadow Bola
+            ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 6;
+            ctx.fillStyle = "white";
+            ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowColor = 'transparent'; // Matikan shadow
+
+            // Corak Bola Sepak
+            ctx.fillStyle = "#2c3e50";
+            ctx.beginPath(); ctx.arc(x - 3, y - 3, 3, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + 4, y + 2, 3, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x - 2, y + 4, 3, 0, Math.PI*2); ctx.fill();
+            
+            ctx.strokeStyle = "black"; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.stroke();
         }
 
         function draw() {
@@ -127,26 +187,30 @@
             if(!gameState.players) return;
 
             // Gambar Bola
-            ctx.fillStyle = "white";
-            ctx.beginPath();
-            ctx.arc(gameState.ball.x, gameState.ball.y, 10, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = "black";
-            ctx.lineWidth = 2;
-            ctx.stroke();
+            drawBall(gameState.ball.x, gameState.ball.y);
 
             // Gambar Pemain
             for (let id in gameState.players) {
                 const p = gameState.players[id];
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 20, 0, Math.PI * 2);
-                ctx.fill();
                 
-                // Border pemain bercahaya jika itu diri kita
-                ctx.strokeStyle = id === myId ? "yellow" : "black";
+                // Shadow Pemain
+                ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 8;
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, Math.PI * 2); ctx.fill();
+                ctx.shadowColor = 'transparent';
+
+                // Garis Pinggir Pemain
+                ctx.strokeStyle = id === myId ? "#f1c40f" : "#2c3e50"; // Glow kuning jika itu kita
                 ctx.lineWidth = id === myId ? 4 : 2;
                 ctx.stroke();
+
+                // Bar Stamina (Khusus diri sendiri)
+                if (id === myId) {
+                    ctx.fillStyle = "rgba(0,0,0,0.5)";
+                    ctx.fillRect(p.x - 15, p.y - 30, 30, 5);
+                    ctx.fillStyle = stamina > 40 ? "#2ecc71" : "#e74c3c";
+                    ctx.fillRect(p.x - 15, p.y - 30, (stamina/100) * 30, 5);
+                }
             }
         }
 
@@ -155,34 +219,53 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Kontrol Input
+        // Input Keyboard
         const keys = {};
         window.addEventListener('keydown', (e) => keys[e.key] = true);
         window.addEventListener('keyup', (e) => keys[e.key] = false);
 
+        // Input Tombol Mobile Sprint
+        mobileSprintBtn.addEventListener('touchstart', (e) => { e.preventDefault(); isMobileSprinting = true; mobileSprintBtn.style.background = "#d35400"; });
+        mobileSprintBtn.addEventListener('touchend', (e) => { e.preventDefault(); isMobileSprinting = false; mobileSprintBtn.style.background = "#e67e22"; });
+        mobileSprintBtn.addEventListener('mousedown', () => { isMobileSprinting = true; mobileSprintBtn.style.background = "#d35400"; });
+        mobileSprintBtn.addEventListener('mouseup', () => { isMobileSprinting = false; mobileSprintBtn.style.background = "#e67e22"; });
+
+        // Update Client
         setInterval(() => {
-            if (!currentRoom || !gameState.players || !gameState.players[myId]) return;
+            if (!currentRoom || !gameState.players || !gameState.players[myId] || gameState.state !== 'playing') return;
             
             let p = gameState.players[myId];
             let moved = false;
-            let speed = 6; // Dibuat lebih lincah
+            let speed = 5;
+            let sprinting = false;
+
+            // Logika Stamina & Sprint
+            if ((keys['Shift'] || isMobileSprinting) && stamina > 0) {
+                speed = 9; // Lari sangat cepat
+                stamina -= 1.5; // Menguras stamina
+                sprinting = true;
+            } else {
+                if (stamina < 100) stamina += 0.5; // Pemulihan stamina
+            }
 
             if (keys['ArrowUp'] || keys['w']) { p.y -= speed; moved = true; }
             if (keys['ArrowDown'] || keys['s']) { p.y += speed; moved = true; }
             if (keys['ArrowLeft'] || keys['a']) { p.x -= speed; moved = true; }
             if (keys['ArrowRight'] || keys['d']) { p.x += speed; moved = true; }
 
-            // Batas pergerakan pemain agar tidak keluar lapangan
+            // Batas pergerakan lapangan
             p.x = Math.max(20, Math.min(canvas.width - 20, p.x));
             p.y = Math.max(20, Math.min(canvas.height - 20, p.y));
 
-            if (moved) socket.emit('move', { roomId: currentRoom, x: p.x, y: p.y });
+            if (moved || sprinting) {
+                socket.emit('move', { roomId: currentRoom, x: p.x, y: p.y, isSprinting: sprinting });
+            }
         }, 1000/60);
 
-        // Kontrol Sentuh yang diperbaiki
+        // Kontrol Sentuh HP untuk Analog Movement
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            if (!currentRoom || !gameState.players || !gameState.players[myId]) return;
+            if (!currentRoom || !gameState.players || !gameState.players[myId] || gameState.state !== 'playing') return;
             
             const rect = canvas.getBoundingClientRect();
             const touch = e.touches[0];
@@ -191,11 +274,19 @@
             p.x = (touch.clientX - rect.left) * (canvas.width / rect.width);
             p.y = (touch.clientY - rect.top) * (canvas.height / rect.height);
 
-            // Batas pergerakan
             p.x = Math.max(20, Math.min(canvas.width - 20, p.x));
             p.y = Math.max(20, Math.min(canvas.height - 20, p.y));
 
-            socket.emit('move', { roomId: currentRoom, x: p.x, y: p.y });
+            // Jika sedang lari di HP, kurangi stamina, kalau habis otomatis kecepatan normal
+            let isSprintingNow = false;
+            if (isMobileSprinting && stamina > 0) {
+                stamina -= 1.5;
+                isSprintingNow = true;
+            } else if (!isMobileSprinting && stamina < 100) {
+                stamina += 0.5;
+            }
+
+            socket.emit('move', { roomId: currentRoom, x: p.x, y: p.y, isSprinting: isSprintingNow });
         }, { passive: false });
     </script>
 </body>
